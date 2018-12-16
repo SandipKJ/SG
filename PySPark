@@ -1,0 +1,40 @@
+pyspark --packages com.databricks:spark-csv_2.10:1.3.0
+
+sc.textFile("hdfs://192.168.75.128:8020/user/olympics/data.csv")
+
+df.dropDuplicates(['name', 'height']).show()
+counts.saveAsTextFile("hdfs://192.168.75.128:8020/user/olympics/dublicates.csv")
+
+=========================================================================
+Spark 2
+
+load file with header true and infer schema as true
+
+=============================================================
+>>> from pyspark.sql import SQLContext
+>>> from pyspark.sql.types import *
+>>> sqlContext = SQLContext(sc)
+
+>>> df = sqlContext.read.load('file:///home/vagrant/data/nyctaxisub.csv', 
+                      format='com.databricks.spark.csv', 
+                      header='true', 
+                      inferSchema='true')
+
+>>> df.count()
+249999
+============================================================
+df['is_duplicated'] = df.duplicated(['order_id', 'order_item_cd'])
+df['is_duplicated'].sum()
+df[df['is_duplicated']].order_item_quantity.sum()
+
+=================================================================
+
+spark.read.csv(
+    "some_input_file.csv", header=True, mode="DROPMALFORMED", schema=schema
+)
+
+
+================================================================
+
+
+# https://33sticks.com/python-for-business-identifying-duplicate-data/
