@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-
 import itertools
 import pandas as pd
+from pandas import ExcelWriter
 import os
 import sys
 import xlrd
@@ -12,11 +12,18 @@ from flask_cors import CORS
 from flask import request
 app = Flask(__name__)
 
+
 CORS(app)
+chart_dict = {}
+resp_dict = {}
+
+@app.route('/chart',methods=['GET'])
+def createChart():
+    return json.dumps(chart_dict)
 
 @app.route('/xls', methods=['GET'])
 def test():
-    fileNameSelected = request.args.get('fileName');
+    fileNameSelected = request.args.get('fileName')
     filePath = "C:/Users/SPX_HOM_GEN/Downloads/" + fileNameSelected
     print(filePath)
     ling = pd.read_excel(filePath)
@@ -30,26 +37,45 @@ def test():
 def findDuplicates():
     fileNameSelected = request.args.get('fileName');
     filepath="C:/Users/SPX_HOM_GEN/Downloads/" + fileNameSelected;
-    list = request.args.get('columns').split(',')
+    columns = request.args.get('columns')
     if(filepath.find('.xlsx') != -1):
         xls = xlrd.open_workbook(filepath,on_demand=True)
-        #print (xls.sheet_names())
-        pd.read_excel(filepath,xls.sheet_names()[0]).to_csv("C:/Users/SPX_HOM_GEN/Downloads/duplicates.csv",index=False)
-        df = pd.read_csv("C:/Users/SPX_HOM_GEN/Downloads/duplicates.csv",low_memory=False)
+        df = pd.read_excel(filepath,index=False)
     elif(filepath.find('.csv') != -1):
         df = pd.read_csv(filepath,low_memory=False)
     else:
         return "File format is not as expected";
+
+    data = df.shape[0]
+
     if(df.duplicated().any()):
-        df_duplicates = df[df.duplicated(subset=list,keep=False)]
-        df_duplicates.to_csv('C:/Users/SPX_HOM_GEN/Downloads/EXPORT_MAESTRO_REG_Duplicates.csv')
-        df.drop_duplicates(subset=list,inplace=True)
-        df.to_csv('C:/Users/SPX_HOM_GEN/Downloads/EXPORT_MAESTRO_REG_NoDuplicates.csv')
-        # return "true";
+        df_duplicates = df[df.duplicated(subset=columns.split(','),keep='first')]
+        writer = ExcelWriter('C:/Users/SPX_HOM_GEN/Downloads/EXPORT_MAESTRO_REG_new.xlsx')
+        df.to_excel(writer,'Original')
+#        df['CITY'].replace(to_replace=['PARIS 9'], value='PARIS',inplace=True)
+        df_duplicates.to_excel(writer,'NoDuplicates')
+
+        df.drop_duplicates(subset=columns.split(','),inplace=True)
+        df_duplicates.to_excel(writer,'OnlyDuplicates')
+        writer.close()
+
     else :
         print("No duplicates found");
-    
-    return "true"
+
+    new_data = pd.read_csv("C:/Users/SPX_HOM_GEN/Downloads/EXPORT_MAESTRO_REG_NoDuplicates.csv", low_memory=False)
+    print("Unique rows: {0}".format(len(new_data)))
+
+    nat = pd.read_csv("C:/Users/SPX_HOM_GEN/Downloads/EXPORT_MAESTRO_REG_Duplicates.csv", low_memory=False)
+    print("Total duplicate rows: {0}".format(len(nat)))
+
+    dupl = len(nat)/data * 100
+    nodupl = (100-dupl)
+    chart_dict["duplicates"] = "%.2f" %dupl
+    chart_dict["no_duplicates"] = "%.2f" %nodupl
+    resp_dict["Dup"] = len(nat)
+    resp_dict["Unique"] = len(new_data)
+    return json.dumps(resp_dict)
+    # return "true"
 
 @app.route('/init', methods=['GET'])
 def sample_function1(*args):
