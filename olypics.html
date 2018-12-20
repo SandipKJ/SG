@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Bootstrap Example</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+<style>
+    .well {
+        margin-left: 27px;
+        width: 100%;
+    }
+    .buttonload {
+        background-color: #4CAF50; /* Green background */
+        border: none; /* Remove borders */
+        color: white; /* White text */
+        padding: 12px 24px; /* Some padding */
+        font-size: 16px; /* Set a font-size */
+    }
+
+    /* Add a right margin to each icon */
+    .fa {
+        margin-left: -12px;
+        margin-right: 8px;
+    }
+</style>
+<script>
+    /*$(document).ready(function () {*/
+        $(document).on('click', '#getFileInfo', function () {
+        //$("#getFileInfo").click(function () {
+            var filename = document.getElementById("fileDetails").files[0].name;
+            $("#getFileInfoDiv").html('<button class="btn btn-primary" style="padding-left: 26px"> <i class="fa fa-refresh fa-spin"></i>Loading.. </button>');
+            $.ajax({
+                type: 'get',
+                url: 'http://127.0.0.1:5002/xls?fileName='+filename,
+                success: function (responseData) {
+                    var data = "";
+                    finalData = JSON.parse(responseData);
+                    for (i = 0; i < finalData.length; i++) {
+                        columnName = finalData[i].length > 15 ? finalData[i].substring(0, 15) : finalData[i];
+                        data += '<div class="col-sm-3"><input type="checkbox" checked="checked" value="' + columnName + '" class="regular-checkbox">' + columnName + '</input></div>';
+                    }
+                    data += '<div id="processDataDiv"><button class="btn btn-primary processData">Process Dublicates</button></div>';
+                    $(".row").html(data);
+                    $("#getFileInfoDiv").html('<button class="btn btn-primary" id="getFileInfo">Get File Details</button>');
+                }
+            });
+
+       // });
+    });
+    $(document).on('click', '.processData', function () {
+            var filename = document.getElementById("fileDetails").files[0].name;
+           $("#processDataDiv").html('<button class="btn btn-primary" style="padding-left: 26px"> <i class="fa fa-refresh fa-spin"></i>Processing Duplicates.. </button>');
+            var checkedVals = $('.regular-checkbox:checkbox:checked').map(function () {
+                return this.value;
+            }).get();
+            $.ajax({
+                type: 'get',
+                url: 'http://127.0.0.1:5002/find-duplicates-with-column?fileName='+filename+'&columns='+checkedVals,
+                success: function (data) {
+                    $("#processDataDiv").html('<button class="btn btn-primary processData">Process Dublicates</button>');
+                }
+            });
+    });
+
+</script>
+<body>
+<div class="container" style="max-width: 70%">
+    <h2>Get Started</h2>
+    <div class="well">
+        <div class="form-group">
+            <label for="file">Upload File</label>
+            <input type="file" class="form-control" id="fileDetails" placeholder="Select File">
+        </div>
+        <div id="getFileInfoDiv"><button class="btn btn-primary" id="getFileInfo">Get File Details</button></div>
+    </div>
+    <div class="well row">
+
+    </div>
+    <div class="well">
+        <h2>Duplicate Rows</h2>
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <th>Firstname</th>
+                <th>Lastname</th>
+                <th>Email</th>
+                <th>Email</th>
+                <th>Email</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>John</td>
+                <td>Doe</td>
+                <td>john@example.com</td>
+                <td>john@example.com</td>
+                <td>john@example.com</td>
+            </tr>
+            <tr>
+                <td>Mary</td>
+                <td>Moe</td>
+                <td>mary@example.com</td>
+                <td>Moe</td>
+                <td>Moe</td>
+            </tr>
+            <tr>
+                <td>July</td>
+                <td>Dooley</td>
+                <td>july@example.com</td>
+                <td>Moe</td>
+                <td>Moe</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>
